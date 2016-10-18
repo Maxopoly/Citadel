@@ -4,15 +4,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import vg.civcraft.mc.citadel.Citadel;
 import vg.civcraft.mc.citadel.PlayerState;
-import vg.civcraft.mc.citadel.ReinforcementManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Bypass extends PlayerCommandMiddle{
-	private ReinforcementManager rm = Citadel.getReinforcementManager();
 
 	public Bypass(String name) {
 		super(name);

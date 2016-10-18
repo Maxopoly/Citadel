@@ -9,7 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-import vg.civcraft.mc.citadel.command.CommandHandler;
+import vg.civcraft.mc.citadel.command.CitadelCommandHandler;
 import vg.civcraft.mc.citadel.database.CitadelReinforcementData;
 import vg.civcraft.mc.citadel.listener.BlockListener;
 import vg.civcraft.mc.citadel.listener.EntityListener;
@@ -24,7 +24,6 @@ import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
 import vg.civcraft.mc.civmodcore.ACivMod;
 import vg.civcraft.mc.civmodcore.dao.ManagedDatasource;
 import vg.civcraft.mc.mercury.MercuryAPI;
-import vg.civcraft.mc.namelayer.GroupManager.PlayerType;
 import vg.civcraft.mc.namelayer.permission.PermissionType;
 
 public class Citadel extends ACivMod{
@@ -32,7 +31,7 @@ public class Citadel extends ACivMod{
 	
 	private static CitadelReinforcementData db;
 	private static ReinforcementManager rm;
-	private CommandHandler cHandle;
+	private CitadelCommandHandler cHandle;
 	private static Citadel instance;
 	
 	// Calling this for ACivMod
@@ -127,23 +126,21 @@ public class Citadel extends ACivMod{
 	
 	@SuppressWarnings("unchecked")
 	public void registerNameLayerPermissions() {
-		LinkedList <PlayerType> membersAndAbove = new LinkedList<PlayerType>();
-		membersAndAbove.add(PlayerType.MEMBERS);
-		membersAndAbove.add(PlayerType.MODS);
-		membersAndAbove.add(PlayerType.ADMINS);
-		membersAndAbove.add(PlayerType.OWNER);
-		LinkedList <PlayerType> modsAndAbove = new LinkedList<PlayerType>();
-		modsAndAbove.add(PlayerType.MODS);
-		modsAndAbove.add(PlayerType.ADMINS);
-		modsAndAbove.add(PlayerType.OWNER);
-		PermissionType.registerPermission("REINFORCE",(LinkedList<PlayerType>) modsAndAbove.clone());
-		PermissionType.registerPermission("ACIDBLOCK",(LinkedList<PlayerType>) modsAndAbove.clone());
-		PermissionType.registerPermission("REINFORCEMENT_INFO",(LinkedList<PlayerType>) membersAndAbove.clone());
-		PermissionType.registerPermission("BYPASS_REINFORCEMENT", (LinkedList<PlayerType>) modsAndAbove.clone());
-		PermissionType.registerPermission("DOORS",(LinkedList<PlayerType>) membersAndAbove.clone());
-		PermissionType.registerPermission("CHESTS",(LinkedList<PlayerType>) membersAndAbove.clone());
-		PermissionType.registerPermission("CROPS",(LinkedList<PlayerType>) membersAndAbove.clone());
-		PermissionType.registerPermission("INSECURE_REINFORCEMENT",(LinkedList<PlayerType>) membersAndAbove.clone());
+		LinkedList <Integer> membersAndAbove = new LinkedList<Integer>();
+		membersAndAbove.add(1);
+		membersAndAbove.add(2);
+		membersAndAbove.add(3);
+		LinkedList <Integer> modsAndAbove = new LinkedList<Integer>();
+		modsAndAbove.add(1);
+		modsAndAbove.add(2);
+		PermissionType.registerPermission("REINFORCE",(LinkedList<Integer>) modsAndAbove.clone(), "Allows reinforcing blocks on this group");
+		PermissionType.registerPermission("ACIDBLOCK",(LinkedList<Integer>) modsAndAbove.clone(), "Allows activating matured acid blocks, which are reinforced on this group");
+		PermissionType.registerPermission("REINFORCEMENT_INFO",(LinkedList<Integer>) membersAndAbove.clone(), "Allows showing detailed information for reinforcements on this group");
+		PermissionType.registerPermission("BYPASS_REINFORCEMENT", (LinkedList<Integer>) modsAndAbove.clone(), "Allows bypassing reinforcements on this group");
+		PermissionType.registerPermission("DOORS",(LinkedList<Integer>) membersAndAbove.clone(), "Allows opening doors, trapdoors, fence gates etc. reinforced on this group");
+		PermissionType.registerPermission("CHESTS",(LinkedList<Integer>) membersAndAbove.clone(), "Allows opening containers like chests or furnaces, which are reinforced on this group");
+		PermissionType.registerPermission("CROPS",(LinkedList<Integer>) membersAndAbove.clone(), "Allows harvesting crops which are planted on ground, which is reinforced on this group");
+		PermissionType.registerPermission("INSECURE_REINFORCEMENT",(LinkedList<Integer>) membersAndAbove.clone(), "Allows enabling/disabling insecure transfer for containers reinforced on this group");
 	}
 	
 	
@@ -151,7 +148,7 @@ public class Citadel extends ACivMod{
 	 * Registers the commands for Citadel.
 	 */
 	public void registerCommands(){
-		cHandle = new CommandHandler();
+		cHandle = new CitadelCommandHandler();
 		cHandle.registerCommands();
 	}
 

@@ -61,6 +61,7 @@ import vg.civcraft.mc.citadel.reinforcement.Reinforcement;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
 import vg.civcraft.mc.namelayer.GroupManager;
 import vg.civcraft.mc.namelayer.NameAPI;
+import vg.civcraft.mc.namelayer.NameLayerPlugin;
 import vg.civcraft.mc.namelayer.group.Group;
 
 public class BlockListener implements Listener {
@@ -78,7 +79,6 @@ public class BlockListener implements Listener {
 	public void onFortificationMode(BlockPlaceEvent event){
 		Player p = event.getPlayer();
 		Block b = event.getBlock();
-		GroupManager gm = NameAPI.getGroupManager();
 		Location loc = b.getLocation();
 		Inventory inv = p.getInventory();
 		Reinforcement rein = rm.getReinforcement(b.getLocation());
@@ -125,7 +125,7 @@ public class BlockListener implements Listener {
 				if (type == null) {
 					return;
 				}
-				String gName = gm.getDefaultGroup(p.getUniqueId());
+				String gName = NameLayerPlugin.getDefaultGroupHandler().getDefaultGroup(p.getUniqueId());
 				if (gName != null) {
 					groupToReinforceTo = GroupManager.getGroup(gName);
 				}
@@ -490,7 +490,7 @@ public class BlockListener implements Listener {
 							return;
 						}						
 						
-						String gName = gm.getDefaultGroup(player.getUniqueId());
+						String gName = NameLayerPlugin.getDefaultGroupHandler().getDefaultGroup(player.getUniqueId());
 						Group g = null;
 						if (gName != null) {
 							g = GroupManager.getGroup(gName);

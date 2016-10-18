@@ -38,6 +38,7 @@ import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementEffect;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
 import vg.civcraft.mc.namelayer.GroupManager;
 import vg.civcraft.mc.namelayer.NameAPI;
+import vg.civcraft.mc.namelayer.NameLayerPlugin;
 import vg.civcraft.mc.namelayer.group.Group;
 import vg.civcraft.mc.namelayer.permission.PermissionType;
 /**
@@ -159,7 +160,7 @@ public class Utility {
         // Handle special case with block reinforcements.
         if (type.getMaterial().isBlock()){
             if (slots.size()>1){
-                if (inv.getItemInHand().isSimilar(itemType) && PlayerState.get(player).getMode() == ReinforcementMode.REINFORCEMENT_FORTIFICATION && slots.get(0) != inv.getHeldItemSlot()){
+                if (inv.getItemInMainHand().isSimilar(itemType) && PlayerState.get(player).getMode() == ReinforcementMode.REINFORCEMENT_FORTIFICATION && slots.get(0) != inv.getHeldItemSlot()){
                 	requirements--;
                 }
             }
@@ -809,7 +810,6 @@ public class Utility {
 	        if (!value.hasNext()) {
 	            return null;
 	        }
-	        String group = value.next();
 	        List<String> itemStackInfo = new ArrayList<String>();
 	        while(value.hasNext()) {
 	            itemStackInfo.add(value.next());
@@ -821,7 +821,7 @@ public class Utility {
 	        if (reinType == null) {
 	            return null;
 	        }
-	        Group g = GroupManager.getSpecialCircumstanceGroup(group);
+	        Group g = GroupManager.getGroup(NameLayerPlugin.getSpecialAdminGroup());
 	        PlayerReinforcement rein = new PlayerReinforcement(loc, dur, 
 	                getIntFormofMaturation(System.currentTimeMillis(),reinType.getItemStack()),
 	                getIntFormofAcidMaturation(System.currentTimeMillis(),reinType.getItemStack()),

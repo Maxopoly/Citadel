@@ -3,6 +3,7 @@ package vg.civcraft.mc.citadel.command.commands;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -11,13 +12,12 @@ import org.bukkit.entity.Player;
 import vg.civcraft.mc.citadel.Citadel;
 import vg.civcraft.mc.namelayer.GroupManager;
 import vg.civcraft.mc.namelayer.NameAPI;
-import vg.civcraft.mc.namelayer.command.TabCompleters.GroupTabCompleter;
+import vg.civcraft.mc.namelayer.command.NameLayerTabCompleter;
 import vg.civcraft.mc.namelayer.group.Group;
 
 public class Stats extends PlayerCommandMiddle{
 
 	private List<Group> run = new ArrayList<Group>();
-	private GroupManager gm = NameAPI.getGroupManager();
 	
 	public Stats(String name) {
 		super(name);
@@ -42,7 +42,7 @@ public class Stats extends PlayerCommandMiddle{
 			Bukkit.getScheduler().runTaskAsynchronously(Citadel.getInstance(), new StatsMessageAllGroups(p));
 			return true;
 		}
-		Group g = gm.getGroup(args[0]);
+		Group g = GroupManager.getGroup(args[0]);
 		
 		if (g == null){
 			sendAndLog(p, ChatColor.RED, "This group does not exist.");
@@ -70,9 +70,9 @@ public class Stats extends PlayerCommandMiddle{
 			return new ArrayList<String>();
 
 		if (args.length == 0) {
-			return GroupTabCompleter.complete(null, null, (Player)sender);
+			return NameLayerTabCompleter.completeGroupWithPermission(null, null, (Player)sender);
 		} else if (args.length == 1) {
-			return GroupTabCompleter.complete(args[0], null, (Player)sender);
+			return NameLayerTabCompleter.completeGroupWithPermission(args[0], null, (Player)sender);
 		} else {
 			return new ArrayList<String>();
 		}

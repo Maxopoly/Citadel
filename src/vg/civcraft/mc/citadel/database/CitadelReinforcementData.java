@@ -600,7 +600,6 @@ public class CitadelReinforcementData {
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void insertReinforcement(Reinforcement rein, boolean retry){
 		if (rein == null){
 			logger.log(Level.WARNING, "CitadelReinforcementData insertReinforcement called with null");
@@ -858,13 +857,7 @@ public class CitadelReinforcementData {
 			logger.log(Level.WARNING, "CitadelReinforcementData getReinCountForGroup called for {0} which does not exist", group);
 			return 0;
 		}
-		StringBuilder allIDs = new StringBuilder();
-		for (Integer id : gg.getGroupIds()) {
-			allIDs.append(id).append(",");
-		}
-		allIDs.append(gg.getGroupId());
-		
-		String finalIDs = allIDs.toString();
+		String finalIDs = String.valueOf(gg.getGroupId());
 		
 		try (Connection connection = db.getConnection();
 				PreparedStatement selectReinCountForGroup = connection.prepareStatement(CitadelReinforcementData.selectReinCountForGroup);) {

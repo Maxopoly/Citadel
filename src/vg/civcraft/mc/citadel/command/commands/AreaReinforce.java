@@ -18,11 +18,11 @@ import vg.civcraft.mc.citadel.Utility;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
 import vg.civcraft.mc.namelayer.GroupManager;
 import vg.civcraft.mc.namelayer.NameAPI;
+import vg.civcraft.mc.namelayer.NameLayerPlugin;
 import vg.civcraft.mc.namelayer.group.Group;
 
 public class AreaReinforce extends PlayerCommandMiddle {
 	private ReinforcementManager rm = Citadel.getReinforcementManager();
-	private GroupManager gm = NameAPI.getGroupManager();
 
 	public AreaReinforce(String name) {
 		super(name);
@@ -47,14 +47,14 @@ public class AreaReinforce extends PlayerCommandMiddle {
 			return true;
 		}
 		ReinforcementType rt = ReinforcementType.getReinforcementType(p
-				.getItemInHand());
+				.getInventory().getItemInMainHand());
 		if (rt == null) {
 			sendAndLog(p, ChatColor.RED, "The item you are holding is not a possible reinforcement");
 			return true;
 		}
 		String groupName = null;
 		if (args.length == 6) {
-			groupName = gm.getDefaultGroup(uuid);
+			groupName = NameLayerPlugin.getDefaultGroupHandler().getDefaultGroup(uuid);
 			if (groupName == null) {
 				sendAndLog(p, ChatColor.RED, "You need to set a default group \n Use /nlsdg to do so");
 				return true;
@@ -62,7 +62,7 @@ public class AreaReinforce extends PlayerCommandMiddle {
 		} else {
 			groupName = args[0];
 		}
-		Group g = gm.getGroup(groupName);
+		Group g = GroupManager.getGroup(groupName);
 		if (g == null) {
 			sendAndLog(p, ChatColor.RED, "That group does not exist.");
 			return true;

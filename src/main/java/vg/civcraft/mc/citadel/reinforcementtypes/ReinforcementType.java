@@ -191,7 +191,7 @@ public class ReinforcementType {
 		return legacyId;
 	}
 	
-	public double getDecayDamageMultipler(long since) {
+	public double getDecayDamageMultiplier(long since) {
 		if (decayTimer <= 0 || decayMultiplier == 1) {
 			return 1;
 		}

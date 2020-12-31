@@ -85,7 +85,7 @@ public final class ReinforcementLogic {
 	public static double getDecayDamage(Reinforcement reinforcement) {
 		if (reinforcement.getGroup() != null) {
 			long lastRefresh = reinforcement.getGroup().getActivityTimeStamp();
-			return reinforcement.getType().getDecayDamageMultipler(lastRefresh);
+			return reinforcement.getType().getDecayDamageMultiplier(lastRefresh);
 		} else {
 			return reinforcement.getType().getDeletedGroupMultiplier();
 		}

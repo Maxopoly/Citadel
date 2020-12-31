@@ -8,10 +8,10 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -159,46 +159,53 @@ public class CitadelDAO extends TableStorageEngine<Reinforcement> {
 
 		this.db.registerMigration(17, false, () -> {
 			try (final Connection connection = db.getConnection();
-				 final PreparedStatement selectRein = connection.prepareStatement(
-				 		"SELECT DISTINCT chunk_x, chunk_z, world_id, group_id FROM ctdl_reinforcements;");
-				 final ResultSet results = selectRein.executeQuery()) {
+					final PreparedStatement selectRein = connection.prepareStatement(
+							"SELECT DISTINCT chunk_x, chunk_z, world_id, group_id FROM ctdl_reinforcements;");
+					final ResultSet results = selectRein.executeQuery()) {
 				// Keep a cache to reduce the number of calls to NameLayer
 				final Map<Integer, Long> lastActivityCache = new TreeMap<>();
-				final Set<ReinDecayStruct> chunkDecays = new HashSet<>();
+				final Map<XZWCoord, Map<Integer, Long>> regionDecays = new HashMap<>();
 				while (results.next()) {
 					final int chunkX = results.getInt(1);
 					final int chunkZ = results.getInt(2);
-					final int worldId = results.getInt(3);
+					final short worldId = results.getShort(3);
 					final int groupId = results.getInt(4);
-					final long lastActivity = lastActivityCache.computeIfAbsent(groupId, _id -> {
+					final long lastActivity = lastActivityCache.computeIfAbsent(groupId, key -> {
 						final Group group = GroupManager.getGroup(groupId);
 						if (group == null) {
 							this.logger.warning("Was unable to find group [" + groupId + "] from reinforcement!");
-							return 0L;
+							return System.currentTimeMillis();
 						}
 						return group.getActivityTimeStamp();
 					});
-					final ReinDecayStruct entry = new ReinDecayStruct(worldId, chunkX, chunkZ, groupId, lastActivity);
-					if (!chunkDecays.add(entry)) {
-						this.logger.warning("Reinforcement decay collision found! " + entry);
+					XZWCoord coord = new XZWCoord(chunkX >> REGION_DECAY_SHIFT, chunkZ >> REGION_DECAY_SHIFT, worldId);
+					Map<Integer, Long> localDecay = regionDecays.computeIfAbsent(coord, k -> new HashMap<>());
+					Long preExisting = localDecay.getOrDefault(groupId, 0L);
+					if (preExisting < lastActivity) {
+						localDecay.put(groupId, lastActivity);
 					}
 				}
 				int decayBatchCounter = 0;
+				int runs = 0;
 				try (final PreparedStatement insertDecay = connection.prepareStatement(
-						"INSERT INTO reinforcement_decays (chunk_x, chunk_z, world_id, group_id, last_active) " +
-								"VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_active = ?;")) {
-					for (final ReinDecayStruct entry : chunkDecays) {
-						insertDecay.setInt(1, entry.chunkX);
-						insertDecay.setInt(2, entry.chunkZ);
-						insertDecay.setInt(3, entry.worldId);
-						insertDecay.setInt(4, entry.groupId);
-						insertDecay.setLong(5, entry.lastActive);
-						insertDecay.setLong(6, entry.lastActive);
-						insertDecay.addBatch();
-						// Execute the batch now if enough entries have piled up
-						if (++decayBatchCounter > 10_000) {
-							decayBatchCounter = 0;
-							insertDecay.executeBatch();
+						"INSERT INTO reinforcement_decays (chunk_x, chunk_z, world_id, group_id, last_active) "
+								+ "VALUES (?, ?, ?, ?, ?);")) {
+					for (Entry<XZWCoord, Map<Integer, Long>> entry : regionDecays.entrySet()) {
+						XZWCoord coord = entry.getKey();
+						for (Entry<Integer, Long> groupEntry : entry.getValue().entrySet()) {
+							insertDecay.setInt(1, coord.getX());
+							insertDecay.setInt(2, coord.getZ());
+							insertDecay.setInt(3, coord.getWorldID());
+							insertDecay.setInt(4, groupEntry.getKey());
+							insertDecay.setTimestamp(5, new Timestamp(groupEntry.getValue()));
+							insertDecay.addBatch();
+							// Execute the batch now if enough entries have piled up
+							if (++decayBatchCounter > 10_000) {
+								runs += decayBatchCounter;
+								logger.info("Updated " + runs + " of " + regionDecays.size());
+								decayBatchCounter = 0;
+								insertDecay.executeBatch();
+							}
 						}
 					}
 					if (decayBatchCounter > 0) {
@@ -207,16 +214,14 @@ public class CitadelDAO extends TableStorageEngine<Reinforcement> {
 				}
 			}
 			return true;
-		},
-		"CREATE TABLE IF NOT EXISTS reinforcement_decays (" +
-				"chunk_x INT(11) not null," +
-				"chunk_z INT(11) not null," +
-				"world_id SMALLINT(5) unsigned not null," +
-				"group_id INT(11) NOT NULL," +
-				"last_active BIGINT(20) NOT NULL DEFAULT '0'," +
-				"PRIMARY KEY (chunk_x, chunk_z, world_id, group_id) USING BTREE," +
-				"INDEX chunkDecayLookUp (chunk_x, chunk_z, world_id, group_id) USING BTREE" +
-				") COLLATE=utf8_general_ci ENGINE=InnoDB;");
+		}, "CREATE TABLE IF NOT EXISTS reinforcement_decays (" 
+				+ "chunk_x INT(11) not null,"
+				+ "chunk_z INT(11) not null," 
+				+ "world_id SMALLINT(5) unsigned not null," 
+				+ "group_id INT(11) NOT NULL,"
+				+ "last_active timestamp NOT NULL DEFAULT NOW(),"
+				+ "PRIMARY KEY (chunk_x, chunk_z, world_id, group_id),"
+				+ "INDEX chunkDecayLookUp (chunk_x, chunk_z, world_id, group_id));");
 	}
 
 	/**
@@ -392,53 +397,4 @@ public class CitadelDAO extends TableStorageEngine<Reinforcement> {
 	public boolean stayLoaded() {
 		return false;
 	}
-
-	// TODO: PLEASE FOR HEAVEN'S SAKE CAN WE HAVE LOMBOK?!?!?!
-	private static class ReinDecayStruct {
-		public final int worldId;
-		public final int chunkX;
-		public final int chunkZ;
-		public final int groupId;
-		public final long lastActive;
-		public ReinDecayStruct(final int worldId,
-							   final int chunkX,
-							   final int chunkZ,
-							   final int groupId,
-							   final long lastActive) {
-			this.worldId = worldId;
-			this.chunkX = chunkX;
-			this.chunkZ = chunkZ;
-			this.groupId = groupId;
-			this.lastActive = lastActive;
-		}
-		@Override
-		public boolean equals(final Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			final ReinDecayStruct that = (ReinDecayStruct) o;
-			return this.worldId == that.worldId
-					&& this.chunkX == that.chunkX
-					&& this.chunkZ == that.chunkZ
-					&& this.groupId == that.groupId;
-		}
-		@Override
-		public int hashCode() {
-			return Objects.hashCode(
-					this.worldId,
-					this.chunkX,
-					this.chunkZ,
-					this.groupId);
-		}
-		@Override
-		public String toString() {
-			return "ReinDecayStruct{" +
-					"worldId=" + this.worldId +
-					", chunkX=" + this.chunkX +
-					", chunkZ=" + this.chunkZ +
-					", groupId=" + this.groupId +
-					", lastActive=" + this.lastActive +
-					'}';
-		}
-	}
-
 }
